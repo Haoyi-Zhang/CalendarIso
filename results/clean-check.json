@@ -1,0 +1,113 @@
+{
+  "status": "all_documented_commands_passed_from_clean_extraction",
+  "scientific_completion": false,
+  "extraction_source": "project packet containing only current paper/artifact/plan/state",
+  "commands": [
+    {
+      "command": "python reproduce.py",
+      "working_directory": "artifact",
+      "exit_code": 0,
+      "wall_seconds": 6.951450570999896,
+      "child_cpu_seconds": 6.943895,
+      "max_child_rss_kib": 110760
+    },
+    {
+      "command": "python reproduce.py --output-dir fresh-results",
+      "working_directory": "artifact",
+      "exit_code": 0,
+      "wall_seconds": 6.871402582000428,
+      "child_cpu_seconds": 6.866320000000001,
+      "max_child_rss_kib": 110760
+    },
+    {
+      "command": "python src/pilot.py --output-dir fresh-single",
+      "working_directory": "artifact",
+      "exit_code": 0,
+      "wall_seconds": 1.203341286000068,
+      "child_cpu_seconds": 1.202261,
+      "max_child_rss_kib": 93484
+    },
+    {
+      "command": "python src/plan_pilot.py --output-dir fresh-plans",
+      "working_directory": "artifact",
+      "exit_code": 0,
+      "wall_seconds": 2.532653663000019,
+      "child_cpu_seconds": 2.5314740000000002,
+      "max_child_rss_kib": 93864
+    },
+    {
+      "command": "python src/atomic_pilot.py --output-dir fresh-atomic",
+      "working_directory": "artifact",
+      "exit_code": 0,
+      "wall_seconds": 0.8294753430000128,
+      "child_cpu_seconds": 0.8283119999999996,
+      "max_child_rss_kib": 94384
+    },
+    {
+      "command": "python tests/test_contracts.py",
+      "working_directory": "artifact",
+      "exit_code": 0,
+      "wall_seconds": 1.6510665679998056,
+      "child_cpu_seconds": 1.6498420000000003,
+      "max_child_rss_kib": 110764
+    },
+    {
+      "command": "pdflatex -interaction=nonstopmode -halt-on-error supplement.tex",
+      "working_directory": "paper",
+      "exit_code": 0,
+      "wall_seconds": 0.40750352699978976,
+      "child_cpu_seconds": 0.40290999999999966,
+      "max_child_rss_kib": 110764
+    },
+    {
+      "command": "pdflatex -interaction=nonstopmode -halt-on-error supplement.tex",
+      "working_directory": "paper",
+      "exit_code": 0,
+      "wall_seconds": 0.39381890899994687,
+      "child_cpu_seconds": 0.3893770000000007,
+      "max_child_rss_kib": 110764
+    },
+    {
+      "command": "pdflatex -interaction=nonstopmode -halt-on-error supplement.tex",
+      "working_directory": "paper",
+      "exit_code": 0,
+      "wall_seconds": 0.3928308409999772,
+      "child_cpu_seconds": 0.3884810000000004,
+      "max_child_rss_kib": 110764
+    },
+    {
+      "command": "documented Python certificate example",
+      "working_directory": "artifact",
+      "exit_code": 0,
+      "wall_seconds": 0.597337060999962,
+      "child_cpu_seconds": 1.0271029999999999,
+      "max_child_rss_kib": 116600
+    }
+  ],
+  "pdf_pages": 5,
+  "main_paper_present": false,
+  "visual_inspection": "all five pages inspected in rendered form; clean rebuild matches their pixel render",
+  "clean_pdf_render_agreement": [
+    {
+      "page": 1,
+      "same_render_as_visually_inspected": true
+    },
+    {
+      "page": 2,
+      "same_render_as_visually_inspected": true
+    },
+    {
+      "page": 3,
+      "same_render_as_visually_inspected": true
+    },
+    {
+      "page": 4,
+      "same_render_as_visually_inspected": true
+    },
+    {
+      "page": 5,
+      "same_render_as_visually_inspected": true
+    }
+  ],
+  "limitations": "Finite checks, no general proof-assistant verification; timing and PDF metadata need not reproduce byte-for-byte."
+}
