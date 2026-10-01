@@ -31,7 +31,7 @@ No dependency installation or network access is required.
 python reproduce.py
 ```
 
-This runs the three exact pilots and 15 contract-test methods, checks fresh results
+This runs the three exact pilots and 18 contract-test methods, checks fresh results
 against all retained deterministic scientific fields, and prints a structured
 summary. Temporary fresh outputs are deleted by default; retained evidence is not
 modified. One child runs at a time, pinned to one available CPU. Each child is
@@ -118,8 +118,11 @@ assert check_certificate(snapshot.to_dict(), plan, certificate)
 ```
 
 `admission.py` and `oracle.py` retain the simpler single-core experiment. Its
-witness replay is a trusted-input helper, not the general public certificate
-validator. Core algorithm routines assume finite caller-supplied dimensions;
+`replay_witness` routine is an independent, strict checker for a *rejected
+certificate's explicit prefix through the declared first failure*. It validates
+serialized state, exact integer (not Boolean) fields, certificate structure and
+arrival legality on that prefix. It does not validate a safe verdict, prove global
+minimality or replace the exhaustive and zero/one-arrival oracles. Core algorithm routines assume finite caller-supplied dimensions;
 resource enforcement is provided by the measured runners, not arbitrary unlimited
 API calls. `choose_atomic` assumes valid, monitor-owned queue state.
 
@@ -139,7 +142,9 @@ A longer-running systems simulation study, current strongest-work comparison and
 the specified journal calibration remain unfinished. No packet, production RPC,
 NIC, kernel-bypass, real-time device, bandwidth or tail-latency advantage is claimed.
 
-The current project has not passed the scientific/venue gate. The intended main
-paper is not contained in this standalone repository. The repository must not be
+The scientific novelty/venue gate remains open. The standalone repository does
+not depend on paper-side files; a separately packaged main manuscript may describe
+these results, but its existence does not close the literature or systems-evidence
+hold. The repository must not be
 advertised as an independently reviewed, deployment-ready or published system.
 See `PROVENANCE.md` for substantive AI contribution and external-use conditions.

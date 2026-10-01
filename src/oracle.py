@@ -70,34 +70,106 @@ oracle above does not rely on that theorem. Return earliest violating offset.
 
 
 def replay_witness(state: dict[str, Any], certificate: dict[str, Any]) -> bool:
-    """Validate a rejected certificate's explicit legal path and first failure."""
-    w = certificate['witness']
-    if not isinstance(w, dict):
-        return False
-    i = w.get('tenant')
-    if type(i) is not int or not 0 <= i < len(state['tenants']) or i == certificate['borrower']:
-        return False
-    t = state['tenants'][i]
-    arr = w.get('arrivals')
-    if type(arr) is not list or len(arr) > 1:
-        return False
-    if arr:
-        if (type(arr[0]) is not list or len(arr[0]) != 3 or
-                any(type(v) is not int for v in arr[0]) or arr[0][1:] != [i, 1] or
-                not 1 <= arr[0][0] < certificate['length']):
+    """Validate one rejected single-core certificate's explicit witness prefix.
+
+    This checker is independent of :mod:`admission`: it validates the serialized
+    snapshot, the rejection fields that control replay, and the complete witness
+    prefix through the declared first failure.  It does *not* prove that a safe
+    verdict is globally correct; ``exhaustive`` and ``one_arrival_check`` serve
+    that separate purpose.
+
+    A witness is prefix-scoped: every listed arrival must occur no later than the
+    declared violation offset.  This prevents accepting an invalid event hidden
+    after an early failure.  Exact ``type(...) is int`` checks deliberately reject
+    booleans, which compare equal to zero or one in Python.
+    """
+    try:
+        if type(state) is not dict or set(state) != {'calendar', 'phase', 'tenants'}:
             return False
-    q, x, done = t['backlog'] + t['lead'], t['tokens'], 0
-    for s in range(certificate['length']):
-        if s and s >= t['refill'] and (s - t['refill']) % t['period'] == 0:
-            x = min(t['bucket'], x + 1)
-        if arr and arr[0][0] == s:
-            if not x or q >= t['capacity']:
+        calendar, tenants = state['calendar'], state['tenants']
+        if type(calendar) not in (list, tuple) or not calendar:
+            return False
+        if type(tenants) not in (list, tuple) or not tenants:
+            return False
+        if (type(state['phase']) is not int or
+                not 0 <= state['phase'] < len(calendar) or
+                any(type(owner) is not int or not -1 <= owner < len(tenants)
+                    for owner in calendar)):
+            return False
+        fields = {'backlog', 'lead', 'capacity', 'tokens', 'bucket', 'period', 'refill'}
+        for t in tenants:
+            if type(t) is not dict or set(t) != fields or any(type(v) is not int for v in t.values()):
                 return False
-            q += 1
-            x -= 1
-        if state['calendar'][(state['phase'] + s) % len(state['calendar'])] == i and q:
-            q -= 1
-            done += 1
-        if done > t['lead']:
-            return s == w.get('violation_offset')
-    return False
+            if (min(t['backlog'], t['lead'], t['tokens']) < 0 or
+                    min(t['capacity'], t['bucket'], t['period'], t['refill']) < 1 or
+                    t['backlog'] + t['lead'] > t['capacity'] or
+                    t['tokens'] > t['bucket'] or t['refill'] > t['period']):
+                return False
+
+        if (type(certificate) is not dict or
+                set(certificate) != {'borrower', 'length', 'safe', 'rows', 'witness'}):
+            return False
+        borrower, length = certificate['borrower'], certificate['length']
+        if (type(borrower) is not int or not 0 <= borrower < len(tenants) or
+                type(length) is not int or not 1 <= length <= tenants[borrower]['backlog'] or
+                type(certificate['safe']) is not bool or certificate['safe']):
+            return False
+
+        rows = certificate['rows']
+        if type(rows) is not list or len(rows) != len(tenants) - 1:
+            return False
+        uncovered: dict[int, int | None] = {}
+        for row in rows:
+            if type(row) is not dict or set(row) != {'tenant', 'uncovered'}:
+                return False
+            tenant, offset = row['tenant'], row['uncovered']
+            if (type(tenant) is not int or not 0 <= tenant < len(tenants) or
+                    tenant == borrower or tenant in uncovered):
+                return False
+            if offset is not None and (type(offset) is not int or not 0 <= offset < length):
+                return False
+            uncovered[tenant] = offset
+        if set(uncovered) != set(range(len(tenants))) - {borrower}:
+            return False
+
+        w = certificate['witness']
+        if type(w) is not dict or set(w) != {'tenant', 'violation_offset', 'arrivals'}:
+            return False
+        tenant, violation = w['tenant'], w['violation_offset']
+        if (type(tenant) is not int or not 0 <= tenant < len(tenants) or tenant == borrower or
+                type(violation) is not int or not 0 <= violation < length or
+                uncovered.get(tenant) != violation):
+            return False
+        if min((offset, i) for i, offset in uncovered.items() if offset is not None) != (violation, tenant):
+            return False
+
+        arrivals = w['arrivals']
+        if type(arrivals) is not list or len(arrivals) > 1:
+            return False
+        if arrivals:
+            event = arrivals[0]
+            if (type(event) is not list or len(event) != 3 or
+                    any(type(v) is not int for v in event) or
+                    event[1:] != [tenant, 1] or
+                    not 1 <= event[0] <= violation):
+                return False
+
+        t = tenants[tenant]
+        q, x, done = t['backlog'] + t['lead'], t['tokens'], 0
+        first_failure = None
+        for s in range(violation + 1):
+            if s and s >= t['refill'] and (s - t['refill']) % t['period'] == 0:
+                x = min(t['bucket'], x + 1)
+            if arrivals and arrivals[0][0] == s:
+                if not x or q >= t['capacity']:
+                    return False
+                q += 1
+                x -= 1
+            if calendar[(state['phase'] + s) % len(calendar)] == tenant and q:
+                q -= 1
+                done += 1
+            if done > t['lead'] and first_failure is None:
+                first_failure = s
+        return first_failure == violation
+    except (TypeError, ValueError, KeyError, IndexError):
+        return False

@@ -7,11 +7,12 @@ import unittest
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
-from admission import Tenant
+from admission import Tenant, State, certify
 from commitment import Snapshot, certify_plan
-from plan_oracle import check_certificate, full_oracle, reduced_oracle, joint_oracle
+from plan_oracle import check_certificate, full_oracle, reduced_oracle, joint_oracle, validate_input
 from atomic import certify_atomic, choose_atomic
 from atomic_oracle import check_atomic_witness, capacity_oracle, game
+from oracle import replay_witness
 
 
 def state_for(calendar, plan, tails=None, leads=None, tokens=None, period=3, refill=2):
@@ -23,6 +24,75 @@ def state_for(calendar, plan, tails=None, leads=None, tokens=None, period=3, ref
     ts=tuple(Tenant(used[i]+tails[i],leads[i],max(1,used[i]+tails[i]+leads[i]),
                     tokens[i],max(1,tokens[i]),period,refill) for i in range(n))
     return Snapshot(tuple(calendar),0,ts)
+
+
+class SingleCoreReplayTests(unittest.TestCase):
+    def test_replay_rejects_boolean_violation_offset(self):
+        # The valid failure is at integer offset 1.  Python's True == 1 must not
+        # let a boolean-mutated certificate pass.
+        state = State((0, 1), 0, (
+            Tenant(2, 0, 2, 0, 1, 3, 3),
+            Tenant(0, 0, 1, 1, 1, 3, 2),
+        ))
+        cert = certify(state, borrower=0, length=2)
+        self.assertEqual(cert['witness']['violation_offset'], 1)
+        self.assertTrue(replay_witness(state.to_dict(), cert))
+        mutations = []
+        for path, value in (
+                (('witness', 'violation_offset'), True),
+                (('witness', 'violation_offset'), -1),
+                (('witness', 'tenant'), True),
+                (('borrower',), True),
+                (('length',), True),
+                (('safe',), 0),
+                (('witness', 'arrivals'), [[True, 1, 1]])):
+            mutated = copy.deepcopy(cert)
+            target = mutated
+            for key in path[:-1]:
+                target = target[key]
+            target[path[-1]] = value
+            mutations.append(mutated)
+        for mutated in mutations:
+            with self.subTest(mutated=mutated):
+                self.assertFalse(replay_witness(state.to_dict(), mutated))
+
+    def test_replay_rejects_illegal_event_after_first_failure(self):
+        # The queued tenant already fails at offset 0.  An offset-1 arrival has
+        # no token and is outside the witness prefix; an early return used to
+        # hide that malformed suffix.
+        state = State((1,), 0, (
+            Tenant(2, 0, 2, 0, 1, 4, 4),
+            Tenant(1, 0, 1, 0, 1, 4, 4),
+        ))
+        cert = certify(state, borrower=0, length=2)
+        self.assertEqual(cert['witness']['violation_offset'], 0)
+        self.assertTrue(replay_witness(state.to_dict(), cert))
+        mutated = copy.deepcopy(cert)
+        mutated['witness']['arrivals'] = [[1, 1, 1]]
+        self.assertFalse(replay_witness(state.to_dict(), mutated))
+
+
+class IndependentPlanInputTests(unittest.TestCase):
+    def test_calendar_plan_alias_is_role_stable(self):
+        state = {
+            'calendar': [[0]],
+            'phase': 0,
+            'tenants': [{
+                'backlog': 1, 'lead': 0, 'capacity': 1, 'tokens': 0,
+                'bucket': 1, 'period': 1, 'refill': 1,
+            }],
+        }
+        alias = state['calendar']
+        copied = copy.deepcopy(alias)
+        equal_tuple = ((0,),)
+        safe = {'safe': True, 'first_failure': None, 'witness': None}
+        for plan in (alias, copied, equal_tuple):
+            with self.subTest(plan_type=type(plan).__name__, alias=plan is alias):
+                validate_input(state, plan)
+                self.assertTrue(check_certificate(state, plan, safe))
+        with self.assertRaises(ValueError):
+            validate_input(state, [[0], [0]])
+        self.assertFalse(check_certificate(state, [[0], [0]], safe))
 
 
 class FixedCommitmentTests(unittest.TestCase):

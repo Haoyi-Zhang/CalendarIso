@@ -26,17 +26,25 @@ def validate_input(state: dict[str, Any], plan: list | tuple) -> None:
                 t['backlog']+t['lead'] > t['capacity'] or
                 t['tokens'] > t['bucket'] or t['refill'] > t['period']):
             raise ValueError('invalid tenant bounds')
+    # Validate the two serialized roles explicitly.  Object identity is not a role:
+    # callers may intentionally pass the very same list object as both calendar
+    # and plan.  Only plan service is charged against current actual backlog.
+    for col in calendar:
+        if len(col) != m or any(type(i) is not int or not -1 <= i < n for i in col):
+            raise ValueError('invalid calendar column')
+        nonidle = [i for i in col if i >= 0]
+        if len(nonidle) != len(set(nonidle)):
+            raise ValueError('duplicate tenant')
+
     use = [0] * n
-    for series, lower in ((calendar, -1), (plan, -2)):
-        for col in series:
-            if len(col) != m or any(type(i) is not int or not lower <= i < n for i in col):
-                raise ValueError('invalid column')
-            nonidle = [i for i in col if i >= 0]
-            if len(nonidle) != len(set(nonidle)):
-                raise ValueError('duplicate tenant')
-            if series is plan:
-                for i in nonidle:
-                    use[i] += 1
+    for col in plan:
+        if len(col) != m or any(type(i) is not int or not -2 <= i < n for i in col):
+            raise ValueError('invalid plan column')
+        nonidle = [i for i in col if i >= 0]
+        if len(nonidle) != len(set(nonidle)):
+            raise ValueError('duplicate tenant')
+        for i in nonidle:
+            use[i] += 1
     if any(v > t['backlog'] for v,t in zip(use,tenants)):
         raise ValueError('future work in plan')
 

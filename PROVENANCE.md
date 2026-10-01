@@ -1,9 +1,10 @@
 # Provenance and external-use boundary
 
 The mathematical formulation, prose proof drafts, Python implementation, tests,
-finite runs and internal evidence review were substantively produced in ChatGPT
-using GPT-6 Astra Pro. This is not merely spelling or language assistance. No
-external model API or model execution was used by the experiments.
+finite runs and internal evidence review were substantively produced with
+OpenAI ChatGPT. This is not merely spelling or language assistance. The exact
+model identifier used for every earlier drafting stage was not independently
+recorded. No external model API or model execution was used by the experiments.
 
 Huaijin Ran and Haoyi Zhang are the user-supplied prospective author order for the
 internal project. This packet does not establish their individual contributions,

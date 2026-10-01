@@ -118,7 +118,14 @@ claims. The separate checker explicitly replays all zero/one future-unit cases. 
 uses the theorem for completeness and is slower (quadratic in L); the exhaustive
 DP oracle does not use that reduction and enumerates all legal admission amounts.
 Neither code separation nor finite agreement constitutes independent human review
-or a mechanized proof of this theorem.
+or a mechanized proof of this theorem.  The single-core sparse replay helper has a
+narrow contract: it checks a rejected certificate's complete explicit prefix
+through the declared first violation.  It uses exact integer-type and range checks,
+rejects any listed event after that prefix, and does not certify safe verdicts.
+The multicore input checker treats calendar and plan as explicit roles rather than
+inferring a role from Python object identity; aliasing, copying and equal-valued
+sequences therefore have the same semantics, while actual plan service is still
+bounded by current backlog.
 
 ## Corollary 1: a consecutive one-core batch
 

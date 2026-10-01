@@ -59,10 +59,10 @@ def main():
         result=subprocess.run(cmd,cwd=ROOT,env=env,text=True,capture_output=True,timeout=42)
         (out/'tests.txt').write_text(result.stdout+result.stderr)
         if result.returncode:raise RuntimeError('Contract tests failed: '+result.stderr[-2000:])
-        if 'Ran 15 tests' not in result.stderr:raise RuntimeError('Unexpected contract test count')
+        if 'Ran 18 tests' not in result.stderr:raise RuntimeError('Unexpected contract test count')
         after=resource.getrusage(resource.RUSAGE_CHILDREN)
         summary={'status':'finite_reproduction_passed','scientific_completion':False,
-                 'programs':commands,'unit_test_methods':15,'seeded_general_plan_instances':300,
+                 'programs':commands,'unit_test_methods':18,'seeded_general_plan_instances':300,
                  'seed':731203,'child_processes_concurrent':1,
                  'measured_child_cpu_seconds':after.ru_utime+after.ru_stime-before.ru_utime-before.ru_stime,
                  'wall_seconds':time.perf_counter()-started,
