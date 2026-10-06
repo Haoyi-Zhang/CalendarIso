@@ -5,8 +5,7 @@ mathematical derivations, exact scheduling oracles, certificate producers/checke
 an independent unit-job transfer interpreter, continuous model execution and
 full-log replay, and finite regression evidence. It
 requires no paper directory, private data, external service, device, solver, or
-downloaded dependency. The separately supplied main manuscript is an internal
-research draft, not a submitted or externally certified TPDS publication.
+downloaded dependency.
 
 ## What is established in the stated model
 
@@ -50,6 +49,15 @@ second limits and a 3 GiB address-space limit. The project requires enough memor
 for both the runner and one child. `results/reproduction.json` and
 `results/resource-use.json` retain the earlier Linux run with 44 test methods;
 the current suite has 49. Those host timings are not replaced by local rerun times.
+
+A current Ubuntu reproduction is retained under `results/current/run/`. All
+49 tests, 66,858 core cases, 32,766 transfer cases, 2,880 runtime records, and
+720 malformed-log rejections pass the complete record comparisons. The run
+takes 59.169828 wall seconds and 58.424090 child CPU seconds; peak child RSS
+is 34,236 KiB. Large JSONL and CSV files in this current copy are losslessly
+gzip-compressed; decompress a copy before passing those paths to a consumer
+that expects an uncompressed file. The canonical historical inputs and records
+remain in their original locations.
 
 To retain fresh measurements, use an empty, separate output directory:
 
