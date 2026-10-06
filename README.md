@@ -39,14 +39,17 @@ python reproduce.py
 
 This runs the three retained exact pilots, the additional 32,766-case transfer
 comparison, 18 retained contract tests, 12 transfer-specific tests, 14 runtime
-tests, and the complete 120-input / 2,880-run continuous campaign in five shards. It checks
+tests, five protocol-grid regressions, and the complete 120-input / 2,880-run
+continuous campaign in five shards. It checks
 all deterministic scientific fields, every transfer record, all runtime inputs
 and run rows, and the decoded full execution histories. Independent aggregation
 replays all 2,880 logs before the structured summary is printed. Temporary fresh outputs are deleted by default; retained evidence is not
 modified. One child runs at a time, pinned to one available CPU. Each child is
 bounded by a 42-second wall timeout; the three pilots additionally use 35/40 CPU
 second limits and a 3 GiB address-space limit. The project requires enough memory
-for both the runner and one child; recorded use is in `results/reproduction.json`.
+for both the runner and one child. `results/reproduction.json` and
+`results/resource-use.json` retain the earlier Linux run with 44 test methods;
+the current suite has 49. Those host timings are not replaced by local rerun times.
 
 To retain fresh measurements, use an empty, separate output directory:
 
@@ -69,6 +72,7 @@ python src/atomic_pilot.py --output-dir fresh-atomic
 python tests/test_contracts.py
 python tests/test_transfer.py
 python tests/test_runtime.py
+python tests/test_runtime_grid.py
 python transfer_campaign.py --output-dir fresh-transfer
 python runtime_campaign.py --family steady --output-dir fresh-steady
 python runtime_summary.py --replay-all
@@ -184,7 +188,10 @@ Low-level APIs require bounded caller input; the runner enforces campaign limits
 layouts, four batches and six policies. Development seeds are separate. All 120
 inputs, 2,880 run rows, and full histories are retained by family in
 `results/runtime/`; gzip is storage compression only. `runtime_summary.py` verifies
-the full protocol grid and reconstructs every history. No run is excluded for a
+the full protocol grid, including input horizons and tenant/core dimensions.
+With `--replay-all`, it reconstructs every history and all six declared malformed
+variants per primary interruptible trace; summary mutation counts alone are not
+rejection evidence. No run is excluded for a
 negative outcome. The primary table is batch four; all other batches remain
 reported. This is not production-distribution inference or an optimality study.
 
